@@ -1,140 +1,61 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <title>[EGWEBCODE] PESQUISAR TXT CPF</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #0d0d0d;
-      color: #f0f0f0;
-      padding: 40px;
-    }
+import os
+import getpass
+from rich.console import Console
+from rich.panel import Panel
+from rich.prompt import Prompt
+from rich.progress import track
+from rich.text import Text
 
-    h1 {
-      color: #00bcd4;
-    }
+def main():
+    console = Console()
+    usuario = getpass.getuser()
+    pasta_downloads = os.path.join("C:\\Users", usuario, "Downloads")
 
-    input, button {
-      font-size: 16px;
-      padding: 12px;
-      border-radius: 6px;
-      border: none;
-      margin: 8px 4px;
-    }
+    console.print(Panel.fit("[bold cyan]VISUALIZADOR DE ARQUIVO .TXT PESADO[/bold cyan]", border_style="cyan"))
 
-    input[type="file"] {
-      background: #1a1a1a;
-      color: #ccc;
-    }
+    nome_arquivo = Prompt.ask("[bold yellow]Digite o nome do arquivo .txt na pasta Downloads[/bold yellow]")
 
-    input[type="text"] {
-      width: 300px;
-      background-color: #1a1a1a;
-      color: #fff;
-      border: 1px solid #444;
-    }
+    caminho_arquivo = os.path.join(pasta_downloads, nome_arquivo)
 
-    button {
-      background-color: #00bcd4;
-      color: white;
-      cursor: pointer;
-    }
+    if not os.path.isfile(caminho_arquivo):
+        console.print(f"[bold red]Arquivo '{caminho_arquivo}' não encontrado![/bold red]")
+        return
 
-    textarea {
-      width: 100%;
-      height: 300px;
-      margin-top: 20px;
-      background-color: #141414;
-      color: #ffffff;
-      padding: 12px;
-      border-radius: 8px;
-      font-family: monospace;
-      resize: none;
-      line-height: 1.5;
-    }
+    console.print(Panel.fit(f"[green]Abrindo:[/green] {caminho_arquivo}", border_style="green"))
 
-    #mensagemErro {
-      color: #ff4c4c;
-      font-weight: bold;
-      margin-top: 12px;
-      display: none;
-    }
-  </style>
-</head>
-<body>
+    # Leitura e exibição do conteúdo
+    try:
+        with open(caminho_arquivo, 'r', encoding='utf-8', errors='ignore') as arquivo:
+            linhas = list(arquivo)  # Armazena todas as linhas para leitura + busca
 
-  <h1>PESQUISAR TXT CPF</h1>
+        for linha in track(linhas, description="[cyan]Exibindo arquivo...[/cyan]"):
+            console.print(Text(linha.strip(), style="white"))
 
-  <input type="file" id="fileInput" accept=".txt">
-  <input type="text" id="search" placeholder="Termo para buscar...">
-  <button onclick="buscarTermo()">Buscar</button>
-  <button onclick="copiarTexto()">Copiar Resultado</button>
+    except Exception as e:
+        console.print(f"[bold red]Erro ao ler o arquivo:[/bold red] {e}")
+        return
 
-  <div id="mensagemErro">Nenhum resultado encontrado.</div>
-  <textarea id="resultado" readonly></textarea>
+    # 🔍 Opção de pesquisa
+    while True:
+        termo = Prompt.ask("\n[bold green]Deseja buscar por uma palavra ou frase? (deixe vazio para sair)[/bold green]").strip()
+        if not termo:
+            console.print("[bold magenta]Encerrando o programa. Até logo![/bold magenta]")
+            break
 
-  <script>
-    let arquivoSelecionado = null;
+        console.print(f"\n[bold blue]Buscando por:[/bold blue] [yellow]{termo}[/yellow]\n")
+        encontrados = 0
 
-    document.getElementById("fileInput").addEventListener("change", function () {
-      arquivoSelecionado = this.files[0];
-      document.getElementById("resultado").value = '';
-      document.getElementById("mensagemErro").style.display = "none";
-    });
+        for i, linha in enumerate(linhas, 1):
+            if termo.lower() in linha.lower():
+                texto = Text(f"Linha {i}: {linha.strip()}")
+                texto.highlight_words([termo], style="bold red on yellow")
+                console.print(texto)
+                encontrados += 1
 
-    async function buscarTermo() {
-      const termo = document.getElementById("search").value.trim().toLowerCase();
-      const resultado = document.getElementById("resultado");
-      const erro = document.getElementById("mensagemErro");
+        if encontrados == 0:
+            console.print("[bold red]Nenhuma ocorrência encontrada.[/bold red]")
+        else:
+            console.print(f"\n[bold green]{encontrados} ocorrência(s) encontradas.[/bold green]")
 
-      resultado.value = '';
-      erro.style.display = 'none';
-
-      if (!arquivoSelecionado || !termo) return;
-
-      const decoder = new TextDecoder("utf-8");
-      const reader = arquivoSelecionado.stream().getReader();
-
-      let buffer = '';
-      let { value: chunk, done } = await reader.read();
-      let linhasEncontradas = [];
-      const LIMITE = 1000; // limitar a 1000 resultados para performance
-
-      while (!done) {
-        buffer += decoder.decode(chunk, { stream: true });
-        const linhas = buffer.split(/\r?\n/);
-        buffer = linhas.pop(); // última linha pode estar incompleta
-
-        for (const linha of linhas) {
-          if (linha.toLowerCase().includes(termo)) {
-            linhasEncontradas.push(linha);
-            if (linhasEncontradas.length >= LIMITE) break;
-          }
-        }
-
-        if (linhasEncontradas.length >= LIMITE) break;
-        ({ value: chunk, done } = await reader.read());
-      }
-
-      if (linhasEncontradas.length === 0) {
-        erro.style.display = 'block';
-      } else {
-        resultado.value = linhasEncontradas.join('\n');
-        erro.style.display = 'none';
-      }
-    }
-
-    async function copiarTexto() {
-      const texto = document.getElementById("resultado").value;
-      try {
-        await navigator.clipboard.writeText(texto);
-        alert("Texto copiado com sucesso!");
-      } catch (err) {
-        alert("Erro ao copiar.");
-      }
-    }
-  </script>
-
-</body>
-</html>
+if __name__ == "__main__":
+    main()
