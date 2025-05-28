@@ -2,37 +2,30 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>[EG WEBCODE] Pesquisar TXT</title>
+  <title>[EGWEBCODE] PESQUISAR TXT CPF</title>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
       background-color: #0d0d0d;
       color: #f0f0f0;
       padding: 40px;
-      margin: 0;
     }
 
     h1 {
       color: #00bcd4;
-      font-weight: 600;
-      margin-bottom: 20px;
     }
 
-    input[type="file"],
-    input[type="text"],
-    button {
+    input, button {
       font-size: 16px;
-      padding: 12px 14px;
-      border-radius: 8px;
+      padding: 12px;
+      border-radius: 6px;
       border: none;
-      outline: none;
-      margin-top: 10px;
+      margin: 8px 4px;
     }
 
     input[type="file"] {
-      background-color: #1a1a1a;
+      background: #1a1a1a;
       color: #ccc;
-      border: 1px solid #333;
     }
 
     input[type="text"] {
@@ -46,106 +39,102 @@
       background-color: #00bcd4;
       color: white;
       cursor: pointer;
-      transition: background-color 0.3s;
-      margin-left: 10px;
     }
 
-    button:hover {
-      background-color: #0194a8;
-    }
-
-    #textContent {
+    textarea {
       width: 100%;
-      height: 320px;
+      height: 300px;
       margin-top: 20px;
       background-color: #141414;
       color: #ffffff;
-      border: 1px solid #444;
+      padding: 12px;
       border-radius: 8px;
-      padding: 15px;
-      font-size: 16px;
-      font-family: 'Courier New', monospace;
+      font-family: monospace;
       resize: none;
-      line-height: 1.6;
-      box-shadow: 0 0 5px #00bcd4;
+      line-height: 1.5;
     }
 
     #mensagemErro {
       color: #ff4c4c;
       font-weight: bold;
-      text-transform: uppercase;
       margin-top: 12px;
       display: none;
     }
   </style>
 </head>
 <body>
-  <h1>Visualizador de Arquivo TXT com Busca</h1>
 
-  <input type="file" id="fileInput" accept=".txt"><br><br>
+  <h1>PESQUISAR TXT CPF</h1>
 
-  <label for="search">Pesquisar:</label>
-  <input type="text" id="search" placeholder="Digite para buscar...">
-  <button onclick="copiarTexto()">Copiar Texto</button>
+  <input type="file" id="fileInput" accept=".txt">
+  <input type="text" id="search" placeholder="Termo para buscar...">
+  <button onclick="buscarTermo()">Buscar</button>
+  <button onclick="copiarTexto()">Copiar Resultado</button>
 
-  <div id="mensagemErro">RESULTADO NÃO ENCONTRADO</div>
-
-  <textarea id="textContent" readonly placeholder="O conteúdo do arquivo aparecerá aqui..."></textarea>
+  <div id="mensagemErro">Nenhum resultado encontrado.</div>
+  <textarea id="resultado" readonly></textarea>
 
   <script>
-    let conteudoOriginal = '';
+    let arquivoSelecionado = null;
 
-    // Reset input file para aceitar outro arquivo
-    document.getElementById('fileInput').addEventListener('click', function () {
-      this.value = '';
+    document.getElementById("fileInput").addEventListener("change", function () {
+      arquivoSelecionado = this.files[0];
+      document.getElementById("resultado").value = '';
+      document.getElementById("mensagemErro").style.display = "none";
     });
 
-    // Leitura do arquivo
-    document.getElementById('fileInput').addEventListener('change', function () {
-      const file = this.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function (e) {
-          conteudoOriginal = e.target.result;
-          document.getElementById('textContent').value = conteudoOriginal;
-          document.getElementById('mensagemErro').style.display = 'none';
-        };
-        reader.readAsText(file);
+    async function buscarTermo() {
+      const termo = document.getElementById("search").value.trim().toLowerCase();
+      const resultado = document.getElementById("resultado");
+      const erro = document.getElementById("mensagemErro");
+
+      resultado.value = '';
+      erro.style.display = 'none';
+
+      if (!arquivoSelecionado || !termo) return;
+
+      const decoder = new TextDecoder("utf-8");
+      const reader = arquivoSelecionado.stream().getReader();
+
+      let buffer = '';
+      let { value: chunk, done } = await reader.read();
+      let linhasEncontradas = [];
+      const LIMITE = 1000; // limitar a 1000 resultados para performance
+
+      while (!done) {
+        buffer += decoder.decode(chunk, { stream: true });
+        const linhas = buffer.split(/\r?\n/);
+        buffer = linhas.pop(); // última linha pode estar incompleta
+
+        for (const linha of linhas) {
+          if (linha.toLowerCase().includes(termo)) {
+            linhasEncontradas.push(linha);
+            if (linhasEncontradas.length >= LIMITE) break;
+          }
+        }
+
+        if (linhasEncontradas.length >= LIMITE) break;
+        ({ value: chunk, done } = await reader.read());
       }
-    });
 
-    // Atualiza texto ao digitar
-    document.getElementById('search').addEventListener('input', atualizarTexto);
-
-    function atualizarTexto() {
-      const termo = document.getElementById('search').value.trim();
-      const textarea = document.getElementById('textContent');
-      const erro = document.getElementById('mensagemErro');
-
-      if (!termo) {
-        textarea.value = conteudoOriginal;
-        erro.style.display = 'none';
-        return;
-      }
-
-      const regex = new RegExp(`\\b${termo}\\b`, 'gi');
-      const resultados = conteudoOriginal.match(regex);
-
-      if (resultados && resultados.length > 0) {
-        textarea.value = resultados.join('\n');
-        erro.style.display = 'none';
-      } else {
-        textarea.value = '';
+      if (linhasEncontradas.length === 0) {
         erro.style.display = 'block';
+      } else {
+        resultado.value = linhasEncontradas.join('\n');
+        erro.style.display = 'none';
       }
     }
 
-    // Função para copiar o conteúdo visível
-    function copiarTexto() {
-      const textarea = document.getElementById('textContent');
-      textarea.select();
-      document.execCommand('copy');
+    async function copiarTexto() {
+      const texto = document.getElementById("resultado").value;
+      try {
+        await navigator.clipboard.writeText(texto);
+        alert("Texto copiado com sucesso!");
+      } catch (err) {
+        alert("Erro ao copiar.");
+      }
     }
   </script>
+
 </body>
 </html>
