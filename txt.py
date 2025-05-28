@@ -1,5 +1,4 @@
 import os
-import getpass
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Prompt
@@ -8,12 +7,13 @@ from rich.text import Text
 
 def main():
     console = Console()
-    usuario = getpass.getuser()
-    pasta_downloads = os.path.join("C:\\Users", usuario, "Downloads")
 
-    console.print(Panel.fit("[bold cyan]VISUALIZADOR DE ARQUIVO .TXT PESADO[/bold cyan]", border_style="cyan"))
+    # Caminho para a pasta Downloads no Android
+    pasta_downloads = "/storage/emulated/0/Download"
 
-    nome_arquivo = Prompt.ask("[bold yellow]Digite o nome do arquivo .txt na pasta Downloads[/bold yellow]")
+    console.print(Panel.fit("[bold cyan]VISUALIZADOR DE ARQUIVO .TXT PESADO (ANDROID)[/bold cyan]", border_style="cyan"))
+
+    nome_arquivo = Prompt.ask("[bold yellow]Digite o nome do arquivo .txt na pasta Download[/bold yellow]")
 
     caminho_arquivo = os.path.join(pasta_downloads, nome_arquivo)
 
@@ -26,7 +26,7 @@ def main():
     # Leitura e exibição do conteúdo
     try:
         with open(caminho_arquivo, 'r', encoding='utf-8', errors='ignore') as arquivo:
-            linhas = list(arquivo)  # Armazena todas as linhas para leitura + busca
+            linhas = list(arquivo)
 
         for linha in track(linhas, description="[cyan]Exibindo arquivo...[/cyan]"):
             console.print(Text(linha.strip(), style="white"))
@@ -35,7 +35,7 @@ def main():
         console.print(f"[bold red]Erro ao ler o arquivo:[/bold red] {e}")
         return
 
-    # 🔍 Opção de pesquisa
+    # 🔍 Pesquisa
     while True:
         termo = Prompt.ask("\n[bold green]Deseja buscar por uma palavra ou frase? (deixe vazio para sair)[/bold green]").strip()
         if not termo:
