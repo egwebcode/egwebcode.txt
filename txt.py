@@ -1,61 +1,67 @@
 import os
+from math import ceil
 from rich.console import Console
-from rich.panel import Panel
-from rich.prompt import Prompt
-from rich.progress import track
-from rich.text import Text
+from rich.prompt import Prompt, IntPrompt
+
+console = Console()
+
+# Caminho padrão de downloads no Android
+DOWNLOAD_PATH = "/storage/emulated/0/Download"
+OUTPUT_FOLDER = os.path.join(DOWNLOAD_PATH, ".TXT")
+
+def dividir_arquivo(caminho_arquivo, tamanho_mb):
+    if not os.path.isfile(caminho_arquivo):
+        console.print(f"[red]❌ Arquivo não encontrado em: {caminho_arquivo}[/red]")
+        return
+
+    os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+
+    nome_arquivo = os.path.basename(caminho_arquivo)
+    nome_base, extensao = os.path.splitext(nome_arquivo)
+
+    tamanho_bytes = tamanho_mb * 1024 * 1024
+    parte = 1
+    buffer = []
+    bytes_atuais = 0
+    total_linhas = 0
+
+    with open(caminho_arquivo, 'r', encoding='utf-8', errors='ignore') as entrada:
+        for linha in entrada:
+            buffer.append(linha)
+            bytes_atuais += len(linha.encode('utf-8'))
+            total_linhas += 1
+
+            if bytes_atuais >= tamanho_bytes:
+                nome_saida = f"{nome_base}{parte}{extensao}"
+                caminho_saida = os.path.join(OUTPUT_FOLDER, nome_saida)
+                with open(caminho_saida, 'w', encoding='utf-8') as saida:
+                    saida.writelines(buffer)
+                console.print(f"[green]✔ Criado:[/green] {nome_saida}")
+                parte += 1
+                buffer = []
+                bytes_atuais = 0
+
+        # Salvar restante
+        if buffer:
+            nome_saida = f"{nome_base}{parte}{extensao}"
+            caminho_saida = os.path.join(OUTPUT_FOLDER, nome_saida)
+            with open(caminho_saida, 'w', encoding='utf-8') as saida:
+                saida.writelines(buffer)
+            console.print(f"[green]✔ Criado:[/green] {nome_saida}")
+
+    console.print(f"\n[yellow]📄 Total de linhas lidas:[/yellow] {total_linhas}")
+    console.print(f"[bold green]\n🎉 Arquivo dividido com sucesso![/bold green]")
+    console.print(f"[blue]📁 Arquivos salvos em:[/blue] {OUTPUT_FOLDER}")
 
 def main():
-    console = Console()
+    console.print("[bold cyan]📂 Divisor de Arquivos TXT para Android (Termux)[/bold cyan]\n")
 
-    # Caminho para a pasta Downloads no Android
-    pasta_downloads = "/storage/emulated/0/Download"
+    nome_arquivo = Prompt.ask("📄 Nome do arquivo .txt (dentro da pasta Download)", default="meuarquivo.txt")
+    caminho_completo = os.path.join(DOWNLOAD_PATH, nome_arquivo)
 
-    console.print(Panel.fit("[bold cyan]VISUALIZADOR DE ARQUIVO .TXT PESADO (ANDROID)[/bold cyan]", border_style="cyan"))
+    tamanho_mb = IntPrompt.ask("📏 Tamanho de cada parte (em MB)", default=5)
 
-    nome_arquivo = Prompt.ask("[bold yellow]Digite o nome do arquivo .txt na pasta Download[/bold yellow]")
-
-    caminho_arquivo = os.path.join(pasta_downloads, nome_arquivo)
-
-    if not os.path.isfile(caminho_arquivo):
-        console.print(f"[bold red]Arquivo '{caminho_arquivo}' não encontrado![/bold red]")
-        return
-
-    console.print(Panel.fit(f"[green]Abrindo:[/green] {caminho_arquivo}", border_style="green"))
-
-    # Leitura e exibição do conteúdo
-    try:
-        with open(caminho_arquivo, 'r', encoding='utf-8', errors='ignore') as arquivo:
-            linhas = list(arquivo)
-
-        for linha in track(linhas, description="[cyan]Exibindo arquivo...[/cyan]"):
-            console.print(Text(linha.strip(), style="white"))
-
-    except Exception as e:
-        console.print(f"[bold red]Erro ao ler o arquivo:[/bold red] {e}")
-        return
-
-    # 🔍 Pesquisa
-    while True:
-        termo = Prompt.ask("\n[bold green]Deseja buscar por uma palavra ou frase? (deixe vazio para sair)[/bold green]").strip()
-        if not termo:
-            console.print("[bold magenta]Encerrando o programa. Até logo![/bold magenta]")
-            break
-
-        console.print(f"\n[bold blue]Buscando por:[/bold blue] [yellow]{termo}[/yellow]\n")
-        encontrados = 0
-
-        for i, linha in enumerate(linhas, 1):
-            if termo.lower() in linha.lower():
-                texto = Text(f"Linha {i}: {linha.strip()}")
-                texto.highlight_words([termo], style="bold red on yellow")
-                console.print(texto)
-                encontrados += 1
-
-        if encontrados == 0:
-            console.print("[bold red]Nenhuma ocorrência encontrada.[/bold red]")
-        else:
-            console.print(f"\n[bold green]{encontrados} ocorrência(s) encontradas.[/bold green]")
+    dividir_arquivo(caminho_completo, tamanho_mb)
 
 if __name__ == "__main__":
     main()
