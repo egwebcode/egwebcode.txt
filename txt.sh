@@ -1,80 +1,59 @@
 #!/data/data/com.termux/files/usr/bin/bash
 
-echo "🔧 Instalando dependências..."
-pkg update -y > /dev/null
-pkg install python -y > /dev/null
-pip install --quiet rich
+# Configurações
+NOME="EG WEBCODE"
+TITULO="DATA BASE"
+ARQUIVO_ZIP="EG-WEBCODE-DATA-BASE.zip"
+PASTA="txt_files"
 
-echo "📂 Garantindo acesso ao armazenamento..."
-termux-setup-storage
+# Cores
+RED='\033[1;31m'
+GREEN='\033[1;32m'
+CYAN='\033[1;36m'
+NC='\033[0m' # No Color
 
-SCRIPT_PATH="$HOME/cortar_cpfs.py"
+# Função para mostrar cabeçalho
+mostrar_painel() {
+  clear
+  echo -e "${CYAN}"
+  echo "╔══════════════════════════════════════════════════════╗"
+  echo "║               🔐 $TITULO Generator               ║"
+  echo "╠══════════════════════════════════════════════════════╣"
+  echo "║   Autor  : $NOME"
+  echo "║   Início : $(date '+%Y-%m-%d %H:%M:%S')"
+  echo "║   Saída  : $ARQUIVO_ZIP"
+  echo "╚══════════════════════════════════════════════════════╝"
+  echo -e "${NC}"
+}
 
-echo "📝 Criando script Python em: $SCRIPT_PATH"
-cat > "$SCRIPT_PATH" << 'EOF'
-import os
-import shutil
-from rich.console import Console
-from rich.prompt import IntPrompt
+# Mostrar painel
+mostrar_painel
 
-console = Console()
+# Criar diretório
+mkdir -p "$PASTA"
 
-ARQUIVO_ORIGINAL = "/sdcard/Download/cpfs_validos.txt"
-ARQUIVO_TEMP = os.path.expanduser("~/cpfs_validos.txt")
-PASTA_SAIDA = "/sdcard/Download/.TXT"
+# Iniciar contadores
+total=998001
+count=0
 
-def mover_para_termux():
-    if not os.path.exists(ARQUIVO_ORIGINAL):
-        console.print(f"[red]❌ Arquivo não encontrado em:[/red] {ARQUIVO_ORIGINAL}")
-        return False
-    shutil.copyfile(ARQUIVO_ORIGINAL, ARQUIVO_TEMP)
-    console.print(f"[green]✔ Arquivo copiado para Termux:[/green] {ARQUIVO_TEMP}")
-    return True
+# Geração dos arquivos
+for i in $(seq -w 0 999); do
+  for j in $(seq -w 1 999); do
+    filename="${i}.${j}.txt"
+    touch "$PASTA/$filename"
 
-def dividir_arquivo(tamanho_mb):
-    os.makedirs(PASTA_SAIDA, exist_ok=True)
-    nome_base = "cpfs_validos"
-    extensao = ".txt"
-    tamanho_bytes = tamanho_mb * 1024 * 1024
+    # Progresso simples a cada 10.000 arquivos
+    ((count++))
+    if (( count % 10000 == 0 )); then
+      echo -e "${GREEN}[INFO] Criados $count de $total arquivos...${NC}"
+    fi
+  done
+done
 
-    parte = 1
-    buffer = []
-    bytes_atuais = 0
+# Compactar
+echo -e "${CYAN}[ZIP] Compactando os arquivos para $ARQUIVO_ZIP...${NC}"
+zip -rq "$ARQUIVO_ZIP" "$PASTA"
 
-    with open(ARQUIVO_TEMP, 'r', encoding='utf-8', errors='ignore') as entrada:
-        for linha in entrada:
-            buffer.append(linha)
-            bytes_atuais += len(linha.encode('utf-8'))
-
-            if bytes_atuais >= tamanho_bytes:
-                nome_saida = f"{nome_base}{parte}{extensao}"
-                caminho_saida = os.path.join(PASTA_SAIDA, nome_saida)
-                with open(caminho_saida, 'w', encoding='utf-8') as saida:
-                    saida.writelines(buffer)
-                console.print(f"[cyan]📁 Criado:[/cyan] {nome_saida}")
-                parte += 1
-                buffer = []
-                bytes_atuais = 0
-
-        if buffer:
-            nome_saida = f"{nome_base}{parte}{extensao}"
-            caminho_saida = os.path.join(PASTA_SAIDA, nome_saida)
-            with open(caminho_saida, 'w', encoding='utf-8') as saida:
-                saida.writelines(buffer)
-            console.print(f"[cyan]📁 Criado:[/cyan] {nome_saida}")
-
-    console.print(f"\n[bold green]✅ Arquivo dividido com sucesso![/bold green]")
-    console.print(f"[blue]Saída:[/blue] {PASTA_SAIDA}")
-
-def main():
-    console.print("[bold cyan]📂 Cortador de CPF por MB para Termux[/bold cyan]\n")
-    if mover_para_termux():
-        tamanho_mb = IntPrompt.ask("📏 Tamanho de cada parte (em MB)", default=1)
-        dividir_arquivo(tamanho_mb)
-
-if __name__ == "__main__":
-    main()
-EOF
-
-echo "🚀 Executando script..."
-python "$SCRIPT_PATH"
+# Finalização
+echo -e "${GREEN}[OK] Arquivo gerado com sucesso: $ARQUIVO_ZIP${NC}"
+echo -e "${CYAN}[FIM] Concluído em: $(date '+%Y-%m-%d %H:%M:%S')${NC}"
