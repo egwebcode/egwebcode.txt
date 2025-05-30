@@ -6,7 +6,7 @@ TITULO="DATA BASE"
 ARQUIVO_ZIP="EG-WEBCODE-DATA-BASE.zip"
 PASTA="txt_files"
 
-# Cores
+# Cores para formatação
 RED='\033[1;31m'
 GREEN='\033[1;32m'
 CYAN='\033[1;36m'
@@ -29,21 +29,21 @@ mostrar_painel() {
 # Mostrar painel
 mostrar_painel
 
-# Criar diretório
+# Criar pasta
 mkdir -p "$PASTA"
 
-# Iniciar contadores
-total=998001
+# Contador
+total=999000
 count=0
 
-# Geração dos arquivos
+# Loop para gerar arquivos de 000.001.txt até 999.999.txt
 for i in $(seq -w 0 999); do
   for j in $(seq -w 1 999); do
-    filename="${i}.${j}.txt"
-    touch "$PASTA/$filename"
-
-    # Progresso simples a cada 10.000 arquivos
+    nome_arquivo="${i}.${j}.txt"
+    touch "$PASTA/$nome_arquivo"
     ((count++))
+
+    # Mostrar progresso a cada 10.000
     if (( count % 10000 == 0 )); then
       echo -e "${GREEN}[INFO] Criados $count de $total arquivos...${NC}"
     fi
@@ -51,7 +51,7 @@ for i in $(seq -w 0 999); do
 done
 
 # Compactar
-echo -e "${CYAN}[ZIP] Compactando os arquivos para $ARQUIVO_ZIP...${NC}"
+echo -e "${CYAN}[ZIP] Compactando os arquivos em $ARQUIVO_ZIP...${NC}"
 zip -rq "$ARQUIVO_ZIP" "$PASTA"
 
 # Finalização
