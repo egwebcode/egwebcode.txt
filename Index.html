@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Gerar Arquivo com Todos os Números</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 30px;
+    }
+    #status {
+      margin-top: 20px;
+      font-size: 1.2em;
+      color: darkgreen;
+    }
+    button {
+      padding: 12px 25px;
+      font-size: 16px;
+      cursor: pointer;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+    }
+    button:disabled {
+      background-color: #999;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Gerador de Arquivo Completo (00000000001 até 99999999999)</h1>
+  <button onclick="gerarArquivo()" id="btn">Baixar Arquivo</button>
+  <div id="status"></div>
+
+  <script>
+    async function gerarArquivo() {
+      const btn = document.getElementById("btn");
+      const status = document.getElementById("status");
+      btn.disabled = true;
+      status.innerText = "Gerando conteúdo... isso pode travar seu navegador!";
+
+      // IMPORTANTE: Isso irá TRAVAR ao tentar completar todos os 11 bilhões!
+      // Aqui é um DEMO com 1 milhão como teste (mude para 100_000_000_000 por sua conta e risco)
+
+      const LIMITE = 100000000000; // Para teste: troque por 100000000000 se realmente quiser tudo
+      const CHUNK = 100000; // Gera por partes
+      const partes = [];
+      
+      for (let i = 1; i <= LIMITE; i++) {
+        partes.push(i.toString().padStart(11, '0') + '\n');
+
+        if (i % CHUNK === 0) {
+          status.innerText = `Progresso: ${i.toLocaleString()} números gerados...`;
+          await new Promise(resolve => setTimeout(resolve, 10)); // Libera o loop
+        }
+      }
+
+      status.innerText = "Finalizando arquivo...";
+      const blob = new Blob(partes, { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = "todos_os_numeros.txt";
+      a.click();
+      URL.revokeObjectURL(url);
+      status.innerText = "Download iniciado!";
+      btn.disabled = false;
+    }
+  </script>
+
+</body>
+</html>
