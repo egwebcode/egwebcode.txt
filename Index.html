@@ -2,73 +2,53 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Gerar Arquivo com Todos os Números</title>
+  <title>CPF por Linha</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 30px;
-    }
-    #status {
-      margin-top: 20px;
-      font-size: 1.2em;
-      color: darkgreen;
-    }
-    button {
-      padding: 12px 25px;
-      font-size: 16px;
-      cursor: pointer;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 8px;
-    }
-    button:disabled {
-      background-color: #999;
-    }
+    body { font-family: Arial, sans-serif; margin: 2rem; }
+    input, button { padding: 0.5rem; font-size: 1rem; }
+    .cpf { margin-top: 1rem; font-weight: bold; font-size: 1.2rem; }
   </style>
 </head>
 <body>
+  <h1>Descubra o CPF pela linha gerada</h1>
+  <p>Digite o número da linha (ex: 2000000) para ver qual CPF foi gerado nessa posição:</p>
 
-  <h1>Gerador de Arquivo Completo (00000000001 até 99999999999)</h1>
-  <button onclick="gerarArquivo()" id="btn">Baixar Arquivo</button>
-  <div id="status"></div>
+  <input type="number" id="linha" min="1" placeholder="Número da linha">
+  <button onclick="mostrarCPF()">Ver CPF</button>
+
+  <div class="cpf" id="resultado"></div>
 
   <script>
-    async function gerarArquivo() {
-      const btn = document.getElementById("btn");
-      const status = document.getElementById("status");
-      btn.disabled = true;
-      status.innerText = "Gerando conteúdo... isso pode travar seu navegador!";
+    function calcularDigito(cpf, pesoInicial) {
+      let soma = 0;
+      for (let i = 0; i < cpf.length; i++) {
+        soma += parseInt(cpf[i]) * (pesoInicial - i);
+      }
+      let resto = soma % 11;
+      return resto < 2 ? '0' : (11 - resto).toString();
+    }
 
-      // IMPORTANTE: Isso irá TRAVAR ao tentar completar todos os 11 bilhões!
-      // Aqui é um DEMO com 1 milhão como teste (mude para 100_000_000_000 por sua conta e risco)
+    function gerarCPF(base) {
+      const d1 = calcularDigito(base, 10);
+      const d2 = calcularDigito(base + d1, 11);
+      return base + d1 + d2;
+    }
 
-      const LIMITE = 100000000000; // Para teste: troque por 100000000000 se realmente quiser tudo
-      const CHUNK = 1000000000; // Gera por partes
-      const partes = [];
-      
-      for (let i = 1; i <= LIMITE; i++) {
-        partes.push(i.toString().padStart(11, '0') + '\n');
+    function formatarCPF(cpf) {
+      return cpf.slice(0, 3) + '.' + cpf.slice(3, 6) + '.' + cpf.slice(6, 9) + '-' + cpf.slice(9);
+    }
 
-        if (i % CHUNK === 0) {
-          status.innerText = `Progresso: ${i.toLocaleString()} números gerados...`;
-          await new Promise(resolve => setTimeout(resolve, 10)); // Libera o loop
-        }
+    function mostrarCPF() {
+      const linha = parseInt(document.getElementById("linha").value);
+      if (isNaN(linha) || linha < 1 || linha > 1000000000) {
+        document.getElementById("resultado").innerText = "Digite um número entre 1 e 1.000.000.000";
+        return;
       }
 
-      status.innerText = "Finalizando arquivo...";
-      const blob = new Blob(partes, { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = "todos_os_numeros.txt";
-      a.click();
-      URL.revokeObjectURL(url);
-      status.innerText = "Download iniciado!";
-      btn.disabled = false;
+      const base = (linha - 1).toString().padStart(9, '0');
+      const cpf = gerarCPF(base);
+      document.getElementById("resultado").innerText = "CPF na linha " + linha + ": " + formatarCPF(cpf);
     }
   </script>
-
 </body>
 </html>
